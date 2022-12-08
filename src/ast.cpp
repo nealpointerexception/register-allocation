@@ -71,7 +71,7 @@ int outputTree(AstNode* start, int num, std::ofstream& file){
     if(!num){
         file << "flowchart TD" << std::endl;
     }
-    file << num << "[\"" << start->value  << "]" << std::endl;
+    file << num << "[\"" << start->value  << "\"]" << std::endl;
 
     int myNum = num;
     for(auto* child : start->children){

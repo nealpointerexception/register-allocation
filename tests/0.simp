@@ -2,13 +2,17 @@ d = 1
 a = 2
 b = 3
 c = 1
-e = d + a
-f = b + c
-f = f + b
-if(f > 5){
-    d = e + f
+x = a + b
+y = d + c
+y = y + 3 + c
+if(y > 5){
+    d = x + y
+    y = y + c
+    if(y > 10){
+        d = d + y
+    }
 }
 else{
-    d = e - f
+    d = y - x
 }
-g = d
+w = d + d

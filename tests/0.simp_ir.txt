@@ -2,13 +2,19 @@ d = 1
 a = 2
 b = 3
 c = 1
-e = d + a
-f = b + c
-f = f + b
-if not f > 5 goto else_0
-d = e + f
+x = a + b
+y = d + c
+y = y + 3 + c
+if not y > 5 goto else_0
+d = x + y
+y = y + c
+if not y > 10 goto else_1
+d = d + y
+goto if_1_end
+else_1:
+if_1_end:
 goto if_0_end
 else_0:
-d = e - f
+d = y - x
 if_0_end:
-g = d
+w = d + d

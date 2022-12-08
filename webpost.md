@@ -32,8 +32,8 @@ This project investigates two popular register allocation techniques: Linear Sca
 
 ## Technology and Usage
  Before we start let me introduce what I used to implement this faux compiler. 
-- ANTLR4 with C++
-- Mermaid for graph generation
+- [ANTLR4](https://www.antlr.org/) with C++
+- [Mermaid](https://mermaid-js.github.io/mermaid/#/) for graph generation
 
 To use the compiler (in the root of the repo)
 ```
@@ -44,7 +44,9 @@ make
 ./reg_alloc <input_file> <max # of registers>
 ```
 
-Pass in a test file from the tests folder. The compiler will output the register allocation results for both Linear Scan and GraphColoring along with the CFG and AST as a mermaid file. I would have liked to output the RIG graph as well, but I found the resulting graph to be terrible at illustrating the purpose of the graph as it would not be formatted in a circular/force layout style. Unfortunate!
+Pass in a test file from the tests folder. The compiler will output the register allocation results for both Linear Scan and GraphColoring along with the CFG and AST as a mermaid file. The mermaid files can be converted to png using `mermaid-cli` or plugging them into their [online editor](https://mermaid.live). 
+
+I would have liked to output the RIG graph as well, but I found the resulting graph to be terrible at illustrating the purpose of the graph as it would not be formatted in a circular/force layout style. Unfortunate!
 
 Each step in the pipeline should have its own cpp file for reference and the `main.cpp` file is very straighforward to follow to see how the program is transformed and analyzed.
 
@@ -79,7 +81,7 @@ Here is the sample code we will be using in our program:
 
 ### Stage 2: Creating an AST
 Here we create our AST using our listener handlers. Through a simple stack machine approach, we can create an AST that looks like the following:
-[![](https://mermaid.ink/img/pako:eNpVlEGP0zAQhf9K5SttFc9MEicSe9orJziBOZgm3a3UOquQCpaq_503DrLLrf3kyXufY-dmDtMwmt4cz9Ovw2uYl82XZx-rb97M07R48x1_drsn66MF-5iABSAfCWDIgH1kAJtHxEfJIwJQ-1gDhAwaHxsAyiOtj20eaQGcjw7gRwadjx0Al2IV4qtSLTFtq3UPDwyFLf1X0KKy5TLKytDaau3xgaG41eYfVlYrQ3fblA1IDPVtmw1TBASsKxFOGRysShwLI1hQlSNIZwkWZLP9ynTbKZslBAsqFqSNCRYkOWJlsKBiQdqYYEFNWZcYLKjNsSkCFqQWp3_rUmVokGo8razTMwANrsrzEoMGq0ZdZhkarBq3xJiU6QEqHqydGR4seZdXBg8uHqydGR7c5Le2MnhwW7qkXIiwK7mJwYO7kqudBR5SldzE4CHqsVvPr555gYdQzl0ZPIRzbroJehUe7oKefYGGqMbLA4OGlENltuYyzpdwGnA_bz5uNt4sr-MFYT1-DuMxXM-4oj7esTRcl-nzezyY_hjOP8etub4NYRmfT-FlDpdM30I0_c38Nj2z3beWahKxUjVUb8276aXZd11dc-MqsV1HdN-aP9OEB1R715LtWudqJ8xi260Zh9MyzZ_WT0j6kqSEr2lgma_j_S8LNjiz?type=png)](https://mermaid.live/edit#pako:eNpVlEGP0zAQhf9K5SttFc9MEicSe9orJziBOZgm3a3UOquQCpaq_503DrLLrf3kyXufY-dmDtMwmt4cz9Ovw2uYl82XZx-rb97M07R48x1_drsn66MF-5iABSAfCWDIgH1kAJtHxEfJIwJQ-1gDhAwaHxsAyiOtj20eaQGcjw7gRwadjx0Al2IV4qtSLTFtq3UPDwyFLf1X0KKy5TLKytDaau3xgaG41eYfVlYrQ3fblA1IDPVtmw1TBASsKxFOGRysShwLI1hQlSNIZwkWZLP9ynTbKZslBAsqFqSNCRYkOWJlsKBiQdqYYEFNWZcYLKjNsSkCFqQWp3_rUmVokGo8razTMwANrsrzEoMGq0ZdZhkarBq3xJiU6QEqHqydGR4seZdXBg8uHqydGR7c5Le2MnhwW7qkXIiwK7mJwYO7kqudBR5SldzE4CHqsVvPr555gYdQzl0ZPIRzbroJehUe7oKefYGGqMbLA4OGlENltuYyzpdwGnA_bz5uNt4sr-MFYT1-DuMxXM-4oj7esTRcl-nzezyY_hjOP8etub4NYRmfT-FlDpdM30I0_c38Nj2z3beWahKxUjVUb8276aXZd11dc-MqsV1HdN-aP9OEB1R715LtWudqJ8xi260Zh9MyzZ_WT0j6kqSEr2lgma_j_S8LNjiz)
+[![](https://mermaid.ink/img/pako:eNpVlMFuGjEQhl8l8rUkwjNjexepOeXaU3tq3cMWlgQp7EZ0UZKivHv_saUx4QSfPMz_2WNf3HbejW7j9s_z6_ZpOC03Px7ytP6V3Wmel-x-48ft7b3Pkwf7WoAHoDwRwM4A54kBvJVInsRKBCDkKQAMBmKeIgBZScpTspIE0OWpA_hjoM9TD8At2Brt1y1aYZpW426vGAJ7-hTQI7LnVsrKkNpr7LcrhuBek3-pLChDdh_NpjLE98nilhYQ8F1r0SmDg1eJ98YIFrS2FqS1BAvytseV6baTmRUEC2oWpIkJFiTWojJYULMgTUywoNhYVAYLSq22MGhQZ_tea6FB_acoDAtWi8O-MC4QGqwa95WVWYEGk_WoTAdIPcJVLTxYPS6V6dAwPDiYL2sWhgdH26rK4MHJ3Finh-HBnZ1uZfDgdhylh0BE2lBJGWd4iLd1lcFDyHoIKYOHcFtXmN4Fsb2qPeAhoW2WaGiBiETbLNHNF4hIO5DKICIqgvFvxTCR3nZLer1zMAnNJGjqAJPQBqsymIRmEjR1gEngtq4wmIQ2WeWUgl7sYH2DZgkQCbH11dABIiG1_ysMIkFFbivTyxDgEdqJFBbhEdd2cto2QiO2RynqEEVoRNV4vWLQiGxqUS9DhEYUi1IZNGIw5lbuOJ6Ow2GH1_GSp5ub7Jan8Thmt8HX3bgfzs94IPP0gaXDeZm_v09bt9kPz3_HlTu_7IZlfDgMj6fhaPRlmNzm4t7chu-YuJe-89wJpcSycu9u41O4k-R9il6SxHUvHyv3b57xF_5uXT_JJ0rUSbdy4-6wzKdv9QkvL3np8bMULKfz-PEf5VShYQ?type=png)](https://mermaid.live/edit#pako:eNpVlMFuGjEQhl8l8rUkwjNjexepOeXaU3tq3cMWlgQp7EZ0UZKivHv_saUx4QSfPMz_2WNf3HbejW7j9s_z6_ZpOC03Px7ytP6V3Wmel-x-48ft7b3Pkwf7WoAHoDwRwM4A54kBvJVInsRKBCDkKQAMBmKeIgBZScpTspIE0OWpA_hjoM9TD8At2Brt1y1aYZpW426vGAJ7-hTQI7LnVsrKkNpr7LcrhuBek3-pLChDdh_NpjLE98nilhYQ8F1r0SmDg1eJ98YIFrS2FqS1BAvytseV6baTmRUEC2oWpIkJFiTWojJYULMgTUywoNhYVAYLSq22MGhQZ_tea6FB_acoDAtWi8O-MC4QGqwa95WVWYEGk_WoTAdIPcJVLTxYPS6V6dAwPDiYL2sWhgdH26rK4MHJ3Finh-HBnZ1uZfDgdhylh0BE2lBJGWd4iLd1lcFDyHoIKYOHcFtXmN4Fsb2qPeAhoW2WaGiBiETbLNHNF4hIO5DKICIqgvFvxTCR3nZLer1zMAnNJGjqAJPQBqsymIRmEjR1gEngtq4wmIQ2WeWUgl7sYH2DZgkQCbH11dABIiG1_ysMIkFFbivTyxDgEdqJFBbhEdd2cto2QiO2RynqEEVoRNV4vWLQiGxqUS9DhEYUi1IZNGIw5lbuOJ6Ow2GH1_GSp5ub7Jan8Thmt8HX3bgfzs94IPP0gaXDeZm_v09bt9kPz3_HlTu_7IZlfDgMj6fhaPRlmNzm4t7chu-YuJe-89wJpcSycu9u41O4k-R9il6SxHUvHyv3b57xF_5uXT_JJ0rUSbdy4-6wzKdv9QkvL3np8bMULKfz-PEf5VShYQ)
 
 For ASTNodes with multiple children, I decided to just stick to a pattern for what goes where. For example, an IF node would have 2 or 3 children with the first being the condition, the second being the true block, and the optional third block for else. Ideally, there should be a base ASTNode abstract class which then gets extended for each specific node, adding in any fields the node may need. 
 
@@ -120,13 +122,13 @@ To generate our live intervals, we will loop through each line of execution and 
 
 ```
 Live Intervals:
-g: [13, 13]
-f: [5, 11]
-e: [4, 11]
-c: [3, 5]
-b: [2, 6]
-a: [1, 5]
-d: [0, 11]
+w: [19, 19]
+y: [5, 17]
+x: [4, 17]
+c: [3, 9]
+b: [2, 4]
+a: [1, 4]
+d: [0, 19]
 
 ```
 
@@ -137,28 +139,28 @@ Here is the resulting allocation for the following sample program with a max of 
 
 ```
 Linear Scan Results:
-g: r3
-f: r0
-e: r2
+w: r3
+y: r1
+x: r2
 c: r0
 b: r1
 a: r2
 d: r3
 ```
 
-Nice! All our variables were able to be assigned a register. Suppose we changed line 6 to be `f = b + c + e`. The output is now:
+Nice! All our variables were able to be assigned a register. Suppose we ran the compiler again limiting to only 3 registers. The output is now:
 
 ```
 Linear Scan Results:
-g: r3
-f: r0
-e: r2
+w: r1
+y: r0
 c: r-1
-b: r1
-a: r2
-d: r3
+x: r1
+b: r-1
+a: r1
+d: r2
 ```
-Looks like `c` is spilled!
+Looks like `c` and `b` got spilled!
 
 ## Graph Coloring
 Now we move to a more precise approach. Graph Coloring uses the Live Ranges of a variable to determine how to allocate registers. By performing live variable analysis on a CFG, we can form a Register Interference Graph (RIG) to color. Create an edge in the RIG if two variables are live in the same block. Each variable will receive a different register/color than its neighbors.
@@ -211,7 +213,7 @@ Each CFGNode can be represented like so:
 
 Here is the resulting CFG outputted as a mermaid file:
 
-[![](https://mermaid.ink/img/pako:eNpFks1OwzAQhF9ltScs0ip27CSO1EpIcIQDcEK-mMaBStRBJUVA1Xdn7Khw88633p-xj7wZ-8Adf0x-Ctdb_7L3u8WnclGqji6kEnRzd41IpkgKeqEV9SmmxWJNMiWWCZWCeqBACxqSNmPpogW1Z3iZoP1jLVgraDvQxUBrMgLSDMvzybrYIKsRNKDCgArPUDJqXayB6hk9A22gZNS4aICMQE_MC-ShZFS7qIG0oA0QhtBZNi5WkCuBQiuqEGVZu5h8gA0eMrZVWQbPhsx7ochsB3gyA148PF7dPyKat3GRC96F_c5ve3h9dJHI8fQadsFxh2MfBn94mxy7eEKqP0zjw3fccDftD6Hgw3v__zpn8d1H7o78xV1VyWUjlVFaS13WyhT8zZ2ul9YaU9VtqaW1Sp0K_hlH3C-XbaOkbdq6lE1tVCMLDv12Gve382fIfyJ3eMoXUsPTL1_8jjs?type=png)](https://mermaid.live/edit#pako:eNpFks1OwzAQhF9ltScs0ip27CSO1EpIcIQDcEK-mMaBStRBJUVA1Xdn7Khw88633p-xj7wZ-8Adf0x-Ctdb_7L3u8WnclGqji6kEnRzd41IpkgKeqEV9SmmxWJNMiWWCZWCeqBACxqSNmPpogW1Z3iZoP1jLVgraDvQxUBrMgLSDMvzybrYIKsRNKDCgArPUDJqXayB6hk9A22gZNS4aICMQE_MC-ShZFS7qIG0oA0QhtBZNi5WkCuBQiuqEGVZu5h8gA0eMrZVWQbPhsx7ochsB3gyA148PF7dPyKat3GRC96F_c5ve3h9dJHI8fQadsFxh2MfBn94mxy7eEKqP0zjw3fccDftD6Hgw3v__zpn8d1H7o78xV1VyWUjlVFaS13WyhT8zZ2ul9YaU9VtqaW1Sp0K_hlH3C-XbaOkbdq6lE1tVCMLDv12Gve382fIfyJ3eMoXUsPTL1_8jjs)
+[![](https://mermaid.ink/img/pako:eNpFkk9PwzAMxb-K5RMVHWrarP-kISHBEQ7ACeWStRlMYuk0OliZ9t15TsTWU_x7rp_t5Mjd0Dtu-Wu0o7tf2_ed3cy-c-PVvKUrNU_o4ekekZZIJ_RDC-rpmnphNJvdkprjWIhcJJAWNNGMDsKirI3PoGYJvbzePb8iihwZ8lP8R6KA4ZwD5wlZYIkCLowXCzgsgSUKGLWlMfTVxSKxJXQk3aP5A7BFu0uQIJXGl5DKBG3GSTqQIFXGV5CqKE2QiihXQa6NryHXCa1XdDURbBKgOEzxf2qMb5DVxLEOKDCBxKQMQ8oqVHax6IRFWXYQVqIuFkgVet7k_1EuSPak8mjURyOVnzM55Y3bbey6x-0ejScyPH64jTPc4ti7ld1_joaNPyHV7sfhZfIdtyv7-eVS3m_7y4M406313B75wG2hsxtdlrpUqlalzsqUJ26zm0w-NVdNo2qtVVXlSDml_DsMKKNSdv16HHaP8dWFxxfKvgV93O3d6Q8rjaZm?type=png)](https://mermaid.live/edit#pako:eNpFkk9PwzAMxb-K5RMVHWrarP-kISHBEQ7ACeWStRlMYuk0OliZ9t15TsTWU_x7rp_t5Mjd0Dtu-Wu0o7tf2_ed3cy-c-PVvKUrNU_o4ekekZZIJ_RDC-rpmnphNJvdkprjWIhcJJAWNNGMDsKirI3PoGYJvbzePb8iihwZ8lP8R6KA4ZwD5wlZYIkCLowXCzgsgSUKGLWlMfTVxSKxJXQk3aP5A7BFu0uQIJXGl5DKBG3GSTqQIFXGV5CqKE2QiihXQa6NryHXCa1XdDURbBKgOEzxf2qMb5DVxLEOKDCBxKQMQ8oqVHax6IRFWXYQVqIuFkgVet7k_1EuSPak8mjURyOVnzM55Y3bbey6x-0ejScyPH64jTPc4ti7ld1_joaNPyHV7sfhZfIdtyv7-eVS3m_7y4M406313B75wG2hsxtdlrpUqlalzsqUJ26zm0w-NVdNo2qtVVXlSDml_DsMKKNSdv16HHaP8dWFxxfKvgV93O3d6Q8rjaZm)
 
 ### LiveOut Analysis
 Now, onto our liveout analysis. This is a straightforward and well documented process. In my version I find the VarKill and UEVars of each block. Then I compute the LiveOut for each block in reverse block number until the values converge. Here is the output for our sample program where the initial number corresponds to the block number in the CFG:
@@ -221,15 +223,18 @@ Now, onto our liveout analysis. This is a straightforward and well documented pr
 1: d, 
 2: a, d, 
 3: b, a, d, 
-4: a, d, c, b, 
-5: c, b, e, 
-6: b, f, e, 
-7: f, e, 
-8: f, e, 
-9: d,
-10: d,
-11: 
-12: 
+4: b, a, d, c, 
+5: c, d, x, 
+6: c, y, x, 
+7: y, x, c, 
+8: c, x, y, 
+9: c, y, d, 
+10: y, d, 
+11: y, d, 
+12: d, 
+13: d, 
+14: 
+15: 
 ```
 
 
@@ -239,12 +244,13 @@ With the LiveOut computed we can create our RIG. Each variable is a node and cre
 
 ```
 Graph:
-c: d, a, e, b, 
-b: d, a, c, e, f, 
-e: c, b, f, 
-f: b, e, 
-a: b, c, d, 
-d: b, c, a, 
+y: d, x, c, 
+x: y, d, c, 
+c: y, x, d, a, b, 
+b: c, d, a, 
+a: c, b, d, 
+d: y, x, c, b, a, 
+
 
 ```
 
@@ -254,16 +260,16 @@ Here is the final coloring of our sample program with a max of 4 registers:
 
 ```
 Graph Coloring Results:
-d: r0
-a: r2
-c: r3
+y: r1
+x: r2
+c: r0
 b: r1
-e: r2
-f: r3
+a: r2
+d: r3
 
 ```
 
-Note how no register is assigned to `g` as it wasn't live at the end of the program. For the sake of the example, I suppose it would have been nice to allocate `g` a register, but this is more correct.
+Note how no register is assigned to `w` as it wasn't live at the end of the program. For the sake of the example, I suppose it would have been nice to allocate `w` a register, but this is more correct.
 
 ## Conclusion, Considerations, and Continuation
 Wowie! The resulting code is a very interesting launchpad for a much more thorough implementation. Taking the final register data and outputting to RISCV and comparing speed would have been the next stage after and may be something I attempt. Look out for that in the GitHub repo! I think this investigation led to some crucial realizations about the compiler pipeline, specifically how many transformations your code goes through for analysis and the various passes needed to generate optimized code. Truly have a greater appreciation for the wizards who made clang and gcc. Some interesting optimizations that could be layered on top of these could be local value numbering and generally better spill heuristics.
