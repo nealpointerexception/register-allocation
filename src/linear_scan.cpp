@@ -61,7 +61,7 @@ void IRManager::generateIR(AstNode* node, std::ofstream& file){
         // emit loop statement
         file << "goto while_" << myBranchNum << std::endl;
         lineno++;
-        file << "while_end_" << myBranchNum << std::endl;
+        file << "while_end_" << myBranchNum << ":" << std::endl;
         lineno++;
 
     }

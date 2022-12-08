@@ -41,13 +41,14 @@ std::string readf(const std::string& src_file)
 
 int main(int argc, char *argv[])
 {	
-	if (argc != 2) {
-		std::cerr << "Incorrect arguments\nusage: ./reg_alloc <src_file>" << std::endl;
+	if (argc != 3) {
+		std::cerr << "Incorrect arguments\nusage: ./reg_alloc <src_file> <#registers>" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
 	std::string src_code = readf(argv[1]);
 	std::string inFileName = std::string(argv[1]);
+	int registerCount = atoi(argv[2]);
 	ANTLRInputStream input(src_code);
 	
 	// Lexer`
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
 	liveout.prepCFG();
 	liveout.computeLiveOut();
 
-	GraphColoring graphColoring(4);
+	GraphColoring graphColoring(registerCount);
 	graphColoring.createGraph(cfgCreator.getCFGBlocks());
 	graphColoring.colorGraph();
 
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
 	irman.generateIR(root, irFile);
 
 	std::cout << std::endl;
-	LinearScan linearScan(4);
+	LinearScan linearScan(registerCount);
 	linearScan.computeIntervals(irman.getIrVarData());
 	linearScan.allocateRegisters();
 

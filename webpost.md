@@ -32,6 +32,8 @@ To use the compiler (in the root of the repo)
 mkdir build
 cd build && cmake ..
 make
+
+./reg_alloc <input_file> <max # of registers>
 ```
 
 Pass in a test file from the tests folder. The compiler will output the register allocation results for both Linear Scan and GraphColoring along with the CFG and AST as a mermaid file. I would have liked to output the RIG graph as well, but I found the resulting graph to be terrible at illustrating the purpose of the graph as it would not be formatted in a circular/force layout style. Unfortunate!
@@ -74,7 +76,7 @@ Here we create our AST using our listener handlers. Through a simple stack machi
 For ASTNodes with multiple children, I decided to just stick to a pattern for what goes where. For example, an IF node would have 2 or 3 children with the first being the condition, the second being the true block, and the optional third block for else. Ideally, there should be a base ASTNode abstract class which then gets extended for each specific node, adding in any fields the node may need. 
 
 ### Stage 3: Traversing AST to Generate IR
-Finally, we get to a point where we have a representation of our code that we can work with to generate our IR and perform analysis. Technically, we don't need complete IR in terms of a text-based output, but for the sake of completion, the compiler generates a basic IR with branching statements to translate control flow blocks. Internally, only the variables used, and variables declared are saved per execution statement as a vector as this is all we need to track to compute the live interval. The IR is outputted as a text file:
+Finally, we get to a point where we have a representation of our code that we can work with to generate our IR and perform analysis. Technically, we don't need complete IR in terms of a text-based output, but for the sake of completion, the compiler generates a basic IR with branching statements to translate control flow blocks. Internally, only the variables used and variables declared are saved per execution statement in a vector, since this is all we need to compute the live interval. The IR is outputted as a text file:
 
 ![ir](images/ir.png)
 
@@ -119,7 +121,7 @@ d: [0, 11]
 ### Assign Registers
 Now that we have our intervals we run through each line of execution once more and see which variables need a register. Allocate a register if available, otherwise choose a variable to spill. A spilled register will be assigning the register number -1.
 
-Here is the resulting allocation for the following sample program:
+Here is the resulting allocation for the following sample program with a max of 4 registers:
 
 ```
 Linear Scan Results:
@@ -230,7 +232,7 @@ d: b, c, a,
 
 Now we can assign registers. We start by removing nodes with edges less than the total number of registers specified. As we remove them, add them to a stack. If no node can be removed, remove the node with the most interference and continue. It may be possible to color it once we start adding nodes back, but otherwise we will spill it. Once all the nodes are removed, pop from the stack and assign colors to each variable.
 
-Here is the final coloring of our sample program:
+Here is the final coloring of our sample program with a max of 4 registers:
 
 ```
 Graph Coloring Results:

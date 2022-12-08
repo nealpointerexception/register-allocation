@@ -3,6 +3,6 @@
 mkdir build
 cd build && cmake ..
 make
-```
 
-webpost
+./reg_alloc <input_file> <max # of registers>
+```

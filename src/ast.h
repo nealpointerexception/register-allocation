@@ -32,7 +32,8 @@ class AstNode{
 
         void adopt_child_r(AstNode* child);
         void adopt_child(AstNode* child);
-        std::string toString();
+        std::string toString() const;
+        friend std::ostream& operator<<(std::ostream& os, const AstNode& an);
 };
 
 std::string nodetype2str(NodeType type);

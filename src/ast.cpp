@@ -10,7 +10,7 @@ void AstNode::adopt_child(AstNode* child){
     children.push_back(child);
 }
 
-std::string AstNode::toString(){
+std::string AstNode::toString() const{
     switch(type){
         case NodeType::IF:
         case NodeType::WHILE:
@@ -34,6 +34,11 @@ std::string AstNode::toString(){
         default:
             return "UNKWN";
     }
+}
+
+std::ostream& operator<<(std::ostream& os, const AstNode& an){
+    os << an.toString();
+    return os;
 }
 
 
@@ -66,7 +71,7 @@ int outputTree(AstNode* start, int num, std::ofstream& file){
     if(!num){
         file << "flowchart TD" << std::endl;
     }
-    file << num << "[\"" << start->value  << "\"]" << std::endl;
+    file << num << "[\"" << start->value  << "]" << std::endl;
 
     int myNum = num;
     for(auto* child : start->children){
