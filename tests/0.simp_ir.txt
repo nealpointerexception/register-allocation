@@ -1,0 +1,14 @@
+d = 1
+a = 2
+b = 3
+c = 1
+e = d + a
+f = b + c
+f = f + b
+if not f > 5 goto else_0
+d = e + f
+goto if_0_end
+else_0:
+d = e - f
+if_0_end:
+g = d
