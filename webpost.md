@@ -199,7 +199,7 @@ Cons:
 - Trades off compilation time for accuracy
 
 ### More Steps in the Pipeline
-To complete live ranges, we need to get a CFG representation of our program. Luckily, we have an AST representation which we can use to create a CFG. This process is interesting, especially handling control flow statements where the CFG splits and rejoins at a later point. By tracking parents as we run through each statement we can properly link where each basic block and originate from, thus creating an accurate representation of the program. After the parents are linked up, we can link the children afterwards to finish our graph. This is the same technique PyCFG uses in its code and I referenced their implementation to gain an intuition for the technique.
+To complete live ranges, we need to get a CFG representation of our program. Luckily, we have an AST representation which we can use to create a CFG. This process is interesting, especially handling control flow statements where the CFG splits and rejoins at a later point. By tracking parents as we run through each statement we can properly link where each basic block and originate from, thus creating an accurate representation of the program. After the parents are linked up, we can link the children afterwards to finish our graph. This is the same technique PyCFG uses in its code and I referenced the implementation as outlined in appendix of [The Fuzzing Book](https://www.fuzzingbook.org/) to gain an intuition for the technique.
 
 ![pipeline2](images/pipe2.png)
 
@@ -280,6 +280,6 @@ Each of these algorithms have more optimized versions as well.
 
 Also I would have liked to add more visual output for the live intervals and the RIG. Maybe I will mess with generating them in through another tool.
 
-In all, this was a fun escapade into a subfield of compilers that I greatly enjoyed exploring. All the source code is on GitHub.
+In all, this was a fun escapade into a subfield of compilers that I greatly enjoyed exploring. All the source code is on GitHub, feel free to check out the implementation. 
 
 
