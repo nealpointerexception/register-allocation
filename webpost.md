@@ -1,5 +1,13 @@
 # An Investigation in Various Register Allocation Methods
 
+Neal Chokshi
+
+CSE 211
+
+Professor Sorensen
+
+[Github Link](https://github.com/nealpointerexception/register-allocation)
+
 - [An Investigation in Various Register Allocation Methods](#an-investigation-in-various-register-allocation-methods)
   - [Introduction](#introduction)
   - [Technology and Usage](#technology-and-usage)
