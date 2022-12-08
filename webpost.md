@@ -4,19 +4,17 @@
   - [Introduction](#introduction)
   - [Technology and Usage](#technology-and-usage)
   - [Memory Hierarchy](#memory-hierarchy)
+  - [Compiler Pipeline](#compiler-pipeline)
+    - [Stage 1: Parsing/Lexing](#stage-1-parsinglexing)
+    - [Stage 2: Creating an AST](#stage-2-creating-an-ast)
+    - [Stage 3: Traversing AST to Generate IR](#stage-3-traversing-ast-to-generate-ir)
   - [Linear Scan](#linear-scan)
-    - [Compiler Pipeline](#compiler-pipeline)
-  - [Stage 1: Parsing/Lexing](#stage-1-parsinglexing)
-  - [Stage 2: Creating an AST](#stage-2-creating-an-ast)
-  - [Stage 3: Traversing AST to Generate IR](#stage-3-traversing-ast-to-generate-ir)
-  - [Computing Linear Scan](#computing-linear-scan)
     - [Live Interval](#live-interval)
     - [Assign Registers](#assign-registers)
-  - [Example](#example)
   - [Graph Coloring](#graph-coloring)
-  - [More Steps in the Pipeline](#more-steps-in-the-pipeline)
-  - [LiveOut Analysis](#liveout-analysis)
-  - [Create RIG and Assign Registers](#create-rig-and-assign-registers)
+    - [More Steps in the Pipeline](#more-steps-in-the-pipeline)
+    - [LiveOut Analysis](#liveout-analysis)
+    - [Create RIG and Assign Registers](#create-rig-and-assign-registers)
   - [Conclusion, Considerations, and Continuation](#conclusion-considerations-and-continuation)
 
 ## Introduction
@@ -47,6 +45,41 @@ Code is usually written with two kinds of memory in mind: main memory, and stuff
 
 Thus, it makes sense to optimize such that every time we need a variable, it comes from the fastest possible memory available to us. If we can allocate our registers properly, we may be able to ensure this behavior!
 
+
+## Compiler Pipeline
+To get to the algorithm implementations, we first must tackle creating a compiler pipeline. Linear Scan is simple and only requires an IR for our code, so we can do a simple process as shown below to start. Once we get to GraphColoring we will have to modify our pipeline a little bit.
+
+![pipeline](images/Sketch.png)
+
+The major considerations here are:
+- There is slight complexity introduced by how ANTLR decides to return the corresponding AST. As it doesn't opt for a token action style (like Flex+Bison), we must rely on its listener paradigm to form our own AST that we can freely mutate and traverse. This probably could have been done directly through the listener format, but I prefer having more control over the AST. 
+- Since this project is more about the algorithm implementation and how they fit into a compiler pipeline, I chose to mildly abstract away specific token details by creating a one-size-fits-all ASTNode class. Additionally, I only track if there is an operation being done and ignore what the actual operation is, since it won't affect the results of the register allocation. The operand is saved in the value field if a final ISA is to be generated.
+- This is a very simple language that only supports the main control flow blocks if/while, plus minus operations, greater/less than, and variable declarations. Just enough to create interesting programs!
+
+### Stage 1: Parsing/Lexing
+Easy! ANTLR handles most of this through our grammar definition files:
+![grammar](images/grammar.png)
+![parser](images/parser.png)
+
+Once we build the project, ANTLR spits out base classes for our parser so we can hook into their given parse tree walking functionality. ANTLR does a depth first traversal of its AST representation and calls the overloaded functions as it enters and exits production rules.
+
+Here is the sample code we will be using in our program:
+
+![sample](images/sample_code.png)
+
+### Stage 2: Creating an AST
+Here we create our AST using our listener handlers. Through a simple stack machine approach, we can create an AST that looks like the following:
+[![](https://mermaid.ink/img/pako:eNpVlEGP0zAQhf9K5SttFc9MEicSe9orJziBOZgm3a3UOquQCpaq_503DrLLrf3kyXufY-dmDtMwmt4cz9Ovw2uYl82XZx-rb97M07R48x1_drsn66MF-5iABSAfCWDIgH1kAJtHxEfJIwJQ-1gDhAwaHxsAyiOtj20eaQGcjw7gRwadjx0Al2IV4qtSLTFtq3UPDwyFLf1X0KKy5TLKytDaau3xgaG41eYfVlYrQ3fblA1IDPVtmw1TBASsKxFOGRysShwLI1hQlSNIZwkWZLP9ynTbKZslBAsqFqSNCRYkOWJlsKBiQdqYYEFNWZcYLKjNsSkCFqQWp3_rUmVokGo8razTMwANrsrzEoMGq0ZdZhkarBq3xJiU6QEqHqydGR4seZdXBg8uHqydGR7c5Le2MnhwW7qkXIiwK7mJwYO7kqudBR5SldzE4CHqsVvPr555gYdQzl0ZPIRzbroJehUe7oKefYGGqMbLA4OGlENltuYyzpdwGnA_bz5uNt4sr-MFYT1-DuMxXM-4oj7esTRcl-nzezyY_hjOP8etub4NYRmfT-FlDpdM30I0_c38Nj2z3beWahKxUjVUb8276aXZd11dc-MqsV1HdN-aP9OEB1R715LtWudqJ8xi260Zh9MyzZ_WT0j6kqSEr2lgma_j_S8LNjiz?type=png)](https://mermaid.live/edit#pako:eNpVlEGP0zAQhf9K5SttFc9MEicSe9orJziBOZgm3a3UOquQCpaq_503DrLLrf3kyXufY-dmDtMwmt4cz9Ovw2uYl82XZx-rb97M07R48x1_drsn66MF-5iABSAfCWDIgH1kAJtHxEfJIwJQ-1gDhAwaHxsAyiOtj20eaQGcjw7gRwadjx0Al2IV4qtSLTFtq3UPDwyFLf1X0KKy5TLKytDaau3xgaG41eYfVlYrQ3fblA1IDPVtmw1TBASsKxFOGRysShwLI1hQlSNIZwkWZLP9ynTbKZslBAsqFqSNCRYkOWJlsKBiQdqYYEFNWZcYLKjNsSkCFqQWp3_rUmVokGo8razTMwANrsrzEoMGq0ZdZhkarBq3xJiU6QEqHqydGR4seZdXBg8uHqydGR7c5Le2MnhwW7qkXIiwK7mJwYO7kqudBR5SldzE4CHqsVvPr555gYdQzl0ZPIRzbroJehUe7oKefYGGqMbLA4OGlENltuYyzpdwGnA_bz5uNt4sr-MFYT1-DuMxXM-4oj7esTRcl-nzezyY_hjOP8etub4NYRmfT-FlDpdM30I0_c38Nj2z3beWahKxUjVUb8276aXZd11dc-MqsV1HdN-aP9OEB1R715LtWudqJ8xi260Zh9MyzZ_WT0j6kqSEr2lgma_j_S8LNjiz)
+
+For ASTNodes with multiple children, I decided to just stick to a pattern for what goes where. For example, an IF node would have 2 or 3 children with the first being the condition, the second being the true block, and the optional third block for else. Ideally, there should be a base ASTNode abstract class which then gets extended for each specific node, adding in any fields the node may need. 
+
+### Stage 3: Traversing AST to Generate IR
+Finally, we get to a point where we have a representation of our code that we can work with to generate our IR and perform analysis. Technically, we don't need complete IR in terms of a text-based output, but for the sake of completion, the compiler generates a basic IR with branching statements to translate control flow blocks. Internally, only the variables used, and variables declared are saved per execution statement as a vector as this is all we need to track to compute the live interval. The IR is outputted as a text file:
+
+![ir](images/ir.png)
+
+Note how `goto` statements or labels don't have variable usage or declarations. To make sure the internal ranges were accurate, these lines were accounted for by tracking and using line numbers for the ranges.  
+
 ## Linear Scan
 The first algorithm we will investigate is Linear Scan. This algorithm proposes finding live ranges for variables through an IR/ISA. The basic algorithm is as follows:
 ```python
@@ -68,40 +101,6 @@ Cons:
 - Imprecise since we use intervals over ranges
 - Results can be different based on instruction order
 
-### Compiler Pipeline
-To get to the algorithm stage we first must tackle creating a compiler pipeline. Linear Scan is simple and only requires an IR for our code, so we can do a simple process as shown below to start. Once we get to GraphColoring we will have to modify our pipeline a little bit.
-
-![pipeline](images/Sketch.png)
-
-The major considerations here are:
-- There is slight complexity introduced by how ANTLR decides to return the corresponding AST. As it doesn't opt for a token action style (like Flex+Bison), we must rely on its listener paradigm to form our own AST that we can freely mutate and traverse. This probably could have been done directly through the listener format, but I prefer having more control over the AST. 
-- Since this project is more about the algorithm implementation and how they fit into a compiler pipeline, I chose to mildly abstract away specific token details by creating a one-size-fits-all ASTNode class. Additionally, I only track if there is an operation being done and ignore what the actual operation is, since it won't affect the results of the register allocation. The operand is saved in the value field if a final ISA is to be generated.
-- This is a very simple language that only supports the main control flow blocks if/while, plus minus operations, greater/less than, and variable declarations. Just enough to create interesting programs!
-
-## Stage 1: Parsing/Lexing
-Easy! ANTLR handles most of this through our grammar definition files:
-![grammar](images/grammar.png)
-![parser](images/parser.png)
-
-Once we build the project, ANTLR spits out base classes for our parser so we can hook into their given parse tree walking functionality. ANTLR does a depth first traversal of its AST representation and calls the overloaded functions as it enters and exits production rules.
-
-Here is the sample code we will be using in our program:
-![sample](images/sample_code.png)
-
-## Stage 2: Creating an AST
-Here we create our AST using our listener handlers. Through a simple stack machine approach, we can create an AST that looks like the following:
-[![](https://mermaid.ink/img/pako:eNpVlEGP0zAQhf9K5SttFc9MEicSe9orJziBOZgm3a3UOquQCpaq_503DrLLrf3kyXufY-dmDtMwmt4cz9Ovw2uYl82XZx-rb97M07R48x1_drsn66MF-5iABSAfCWDIgH1kAJtHxEfJIwJQ-1gDhAwaHxsAyiOtj20eaQGcjw7gRwadjx0Al2IV4qtSLTFtq3UPDwyFLf1X0KKy5TLKytDaau3xgaG41eYfVlYrQ3fblA1IDPVtmw1TBASsKxFOGRysShwLI1hQlSNIZwkWZLP9ynTbKZslBAsqFqSNCRYkOWJlsKBiQdqYYEFNWZcYLKjNsSkCFqQWp3_rUmVokGo8razTMwANrsrzEoMGq0ZdZhkarBq3xJiU6QEqHqydGR4seZdXBg8uHqydGR7c5Le2MnhwW7qkXIiwK7mJwYO7kqudBR5SldzE4CHqsVvPr555gYdQzl0ZPIRzbroJehUe7oKefYGGqMbLA4OGlENltuYyzpdwGnA_bz5uNt4sr-MFYT1-DuMxXM-4oj7esTRcl-nzezyY_hjOP8etub4NYRmfT-FlDpdM30I0_c38Nj2z3beWahKxUjVUb8276aXZd11dc-MqsV1HdN-aP9OEB1R715LtWudqJ8xi260Zh9MyzZ_WT0j6kqSEr2lgma_j_S8LNjiz?type=png)](https://mermaid.live/edit#pako:eNpVlEGP0zAQhf9K5SttFc9MEicSe9orJziBOZgm3a3UOquQCpaq_503DrLLrf3kyXufY-dmDtMwmt4cz9Ovw2uYl82XZx-rb97M07R48x1_drsn66MF-5iABSAfCWDIgH1kAJtHxEfJIwJQ-1gDhAwaHxsAyiOtj20eaQGcjw7gRwadjx0Al2IV4qtSLTFtq3UPDwyFLf1X0KKy5TLKytDaau3xgaG41eYfVlYrQ3fblA1IDPVtmw1TBASsKxFOGRysShwLI1hQlSNIZwkWZLP9ynTbKZslBAsqFqSNCRYkOWJlsKBiQdqYYEFNWZcYLKjNsSkCFqQWp3_rUmVokGo8razTMwANrsrzEoMGq0ZdZhkarBq3xJiU6QEqHqydGR4seZdXBg8uHqydGR7c5Le2MnhwW7qkXIiwK7mJwYO7kqudBR5SldzE4CHqsVvPr555gYdQzl0ZPIRzbroJehUe7oKefYGGqMbLA4OGlENltuYyzpdwGnA_bz5uNt4sr-MFYT1-DuMxXM-4oj7esTRcl-nzezyY_hjOP8etub4NYRmfT-FlDpdM30I0_c38Nj2z3beWahKxUjVUb8276aXZd11dc-MqsV1HdN-aP9OEB1R715LtWudqJ8xi260Zh9MyzZ_WT0j6kqSEr2lgma_j_S8LNjiz)
-
-For ASTNodes with multiple children, I decided to just stick to a pattern for what goes where. For example, an IF node would have 2 or 3 children with the first being the condition, the second being the true block, and the optional third block for else. Ideally, there should be a base ASTNode abstract class which then gets extended for each specific node, adding in any fields the node may need. 
-
-## Stage 3: Traversing AST to Generate IR
-Finally, we get to a point where we have a representation of our code that we can work with to generate our IR and perform analysis. Technically, we don't need complete IR in terms of a text-based output, but for the sake of completion, the compiler generates a basic IR with branching statements to translate control flow blocks. Internally, only the variables used, and variables declared are saved per execution statement as a vector as this is all we need to track to compute the live interval. The IR is outputted as a text file:
-
-![ir](images/ir.png)
-
-Note how `goto` statements or labels don't have variable usage or declarations. To make sure the internal ranges were accurate, these lines were accounted for by tracking and using line numbers for the ranges.  
-
-## Computing Linear Scan
 ### Live Interval
 To generate our live intervals, we will loop through each line of execution and save the first definition of a variable as the start and the last usage as the end of the interval. Here are the live intervals for the sample program. Each line corresponds to the lineno+1 in the IR:
 
@@ -119,7 +118,7 @@ d: [0, 11]
 
 ### Assign Registers
 Now that we have our intervals we run through each line of execution once more and see which variables need a register. Allocate a register if available, otherwise choose a variable to spill. A spilled register will be assigning the register number -1.
-## Example
+
 Here is the resulting allocation for the following sample program:
 
 ```
@@ -183,7 +182,7 @@ Pros:
 Cons:
 - Trades off compilation time for accuracy
 
-## More Steps in the Pipeline
+### More Steps in the Pipeline
 To complete live ranges, we need to get a CFG representation of our program. Luckily, we have an AST representation which we can use to create a CFG. This process is interesting, especially handling control flow statements where the CFG splits and rejoins at a later point. By tracking parents as we run through each statement we can properly link where each basic block and originate from, thus creating an accurate representation of the program. After the parents are linked up, we can link the children afterwards to finish our graph. This is the same technique PyCFG uses in its code, and I looked through their implementation to gain an intuition for the technique.
 
 ![pipeline2](images/pipe2.png)
@@ -194,7 +193,7 @@ Here is the resulting CFG outputted as a mermaid file:
 
 [![](https://mermaid.ink/img/pako:eNpFks1OwzAQhF9ltScs0ip27CSO1EpIcIQDcEK-mMaBStRBJUVA1Xdn7Khw88633p-xj7wZ-8Adf0x-Ctdb_7L3u8WnclGqji6kEnRzd41IpkgKeqEV9SmmxWJNMiWWCZWCeqBACxqSNmPpogW1Z3iZoP1jLVgraDvQxUBrMgLSDMvzybrYIKsRNKDCgArPUDJqXayB6hk9A22gZNS4aICMQE_MC-ShZFS7qIG0oA0QhtBZNi5WkCuBQiuqEGVZu5h8gA0eMrZVWQbPhsx7ochsB3gyA148PF7dPyKat3GRC96F_c5ve3h9dJHI8fQadsFxh2MfBn94mxy7eEKqP0zjw3fccDftD6Hgw3v__zpn8d1H7o78xV1VyWUjlVFaS13WyhT8zZ2ul9YaU9VtqaW1Sp0K_hlH3C-XbaOkbdq6lE1tVCMLDv12Gve382fIfyJ3eMoXUsPTL1_8jjs?type=png)](https://mermaid.live/edit#pako:eNpFks1OwzAQhF9ltScs0ip27CSO1EpIcIQDcEK-mMaBStRBJUVA1Xdn7Khw88633p-xj7wZ-8Adf0x-Ctdb_7L3u8WnclGqji6kEnRzd41IpkgKeqEV9SmmxWJNMiWWCZWCeqBACxqSNmPpogW1Z3iZoP1jLVgraDvQxUBrMgLSDMvzybrYIKsRNKDCgArPUDJqXayB6hk9A22gZNS4aICMQE_MC-ShZFS7qIG0oA0QhtBZNi5WkCuBQiuqEGVZu5h8gA0eMrZVWQbPhsx7ochsB3gyA148PF7dPyKat3GRC96F_c5ve3h9dJHI8fQadsFxh2MfBn94mxy7eEKqP0zjw3fccDftD6Hgw3v__zpn8d1H7o78xV1VyWUjlVFaS13WyhT8zZ2ul9YaU9VtqaW1Sp0K_hlH3C-XbaOkbdq6lE1tVCMLDv12Gve382fIfyJ3eMoXUsPTL1_8jjs)
 
-## LiveOut Analysis
+### LiveOut Analysis
 Now, onto our liveout analysis. This is a straightforward and well documented process. In my version I find the VarKill and UEVars of each block. Then I compute the LiveOut for each block in reverse block number until the values converge. Here is the output for our sample program where the initial number corresponds to the block number in the CFG:
 
 ```
@@ -215,7 +214,7 @@ Now, onto our liveout analysis. This is a straightforward and well documented pr
 
 
 
-## Create RIG and Assign Registers
+### Create RIG and Assign Registers
 With the LiveOut computed we can create our RIG. Each variable is a node and create an edge if two variables are live at the same time. The resulting graph is as follows:
 
 ```
