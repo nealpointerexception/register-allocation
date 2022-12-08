@@ -1,0 +1,12 @@
+d = 1
+a = 2
+e = d + a
+f = d + 6
+f = f + e
+while_0:
+if not f > 10 goto while_end_0
+e = e + a
+f = f - 1
+goto while_0
+while_end_0:
+g = e

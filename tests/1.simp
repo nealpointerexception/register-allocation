@@ -1,0 +1,10 @@
+d = 1
+a = 2
+e = d + a
+f = d + 6
+f = f + e
+while(f > 10){
+    e = e + a
+    f = f - 1
+}
+g = e
