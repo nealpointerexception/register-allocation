@@ -25,6 +25,8 @@ void CFGCreator::resolveChildren(){
         }
     }
 }
+
+// basic ast->cfg idea from The Fuzzing Book Appendix
 std::vector<CFGNode*> CFGCreator::traverse(AstNode* node, std::vector<CFGNode*> parents){
     if(node->type == NodeType::ROOT || node->type == NodeType::STAT_LIST){
         // start chaining statements
