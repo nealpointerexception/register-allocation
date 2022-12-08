@@ -75,24 +75,28 @@ Here we create our AST using our listener handlers. Through a simple stack machi
 
 For ASTNodes with multiple children, I decided to just stick to a pattern for what goes where. For example, an IF node would have 2 or 3 children with the first being the condition, the second being the true block, and the optional third block for else. Ideally, there should be a base ASTNode abstract class which then gets extended for each specific node, adding in any fields the node may need. 
 
+Here is the ASTNode class:
+![ast_node](images/ast_node.png)
+
 ### Stage 3: Traversing AST to Generate IR
-Finally, we get to a point where we have a representation of our code that we can work with to generate our IR and perform analysis. Technically, we don't need complete IR in terms of a text-based output, but for the sake of completion, the compiler generates a basic IR with branching statements to translate control flow blocks. Internally, only the variables used and variables declared are saved per execution statement in a vector, since this is all we need to compute the live interval. The IR is outputted as a text file:
+Finally, we get to a point where we have a representation of our code that we can work with to generate our IR and perform analysis. Technically, we don't need complete IR in terms of a text-based output, but for the sake of completion, the compiler generates a basic IR with branching statements to translate control flow blocks. Internally, only the line number, variables used, and variables declared are saved per execution statement as a vector, since this is all we need to compute the live interval. The IR is outputted as a text file:
 
 ![ir](images/ir.png)
 
 Note how `goto` statements or labels don't have variable usage or declarations. To make sure the internal ranges were accurate, these lines were accounted for by tracking and using line numbers for the ranges.  
 
 ## Linear Scan
-The first algorithm we will investigate is Linear Scan. This algorithm proposes finding live ranges for variables through an IR/ISA. The basic algorithm is as follows:
+The first algorithm we will investigate is Linear Scan. This algorithm proposes finding live intervals for variables through an IR/ISA. The basic algorithm is as follows:
 ```python
 ir = generateIR()
-findLiveRanges(ir)
+computeLiveIntervals(ir)
 for e in ir.execution_steps:
     lvars = getLiveVarsAtStep(e)
     for v in lvars:
         if not availableRegister:
             spillAssigned()
-        assignReg(v)
+        else:
+          assignReg(v)
 ```
 
 Pros:
@@ -185,11 +189,17 @@ Cons:
 - Trades off compilation time for accuracy
 
 ### More Steps in the Pipeline
-To complete live ranges, we need to get a CFG representation of our program. Luckily, we have an AST representation which we can use to create a CFG. This process is interesting, especially handling control flow statements where the CFG splits and rejoins at a later point. By tracking parents as we run through each statement we can properly link where each basic block and originate from, thus creating an accurate representation of the program. After the parents are linked up, we can link the children afterwards to finish our graph. This is the same technique PyCFG uses in its code, and I looked through their implementation to gain an intuition for the technique.
+To complete live ranges, we need to get a CFG representation of our program. Luckily, we have an AST representation which we can use to create a CFG. This process is interesting, especially handling control flow statements where the CFG splits and rejoins at a later point. By tracking parents as we run through each statement we can properly link where each basic block and originate from, thus creating an accurate representation of the program. After the parents are linked up, we can link the children afterwards to finish our graph. This is the same technique PyCFG uses in its code and I referenced their implementation to gain an intuition for the technique.
 
 ![pipeline2](images/pipe2.png)
 
+
 After the process completes, we end up with the following CFG, where each line is a basic block. In terms of the internal representation, I kept it minimal, only saving the corresponding AST Node and setting up storage for LiveOut analysis. There is a block number along with starting and ending blocks. The CFG creator class also tracks a mapping of block id to the CFGNode. I found this kind of adjacency list style representation of the CFG to be more useful in terms of looking up blocks and performing operations on the entire CFG.
+
+Each CFGNode can be represented like so:
+
+![cfg_node](images/cfg_node.png)
+
 
 Here is the resulting CFG outputted as a mermaid file:
 

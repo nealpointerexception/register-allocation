@@ -9,11 +9,9 @@
 using namespace antlrcpp;
 using namespace antlr4;
 
-class CFGNode
-{
+class CFGNode {
 public:
 	int id;
-	NodeType type;
 	AstNode *astNode;
 
 	std::unordered_set<std::string> varkill {};
@@ -32,8 +30,6 @@ public:
 
 	void insertChild(CFGNode* node);
 	void insertParent(CFGNode* node);
-
-	
 };
 
 class CFGCreator
